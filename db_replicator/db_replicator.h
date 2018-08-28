@@ -8,7 +8,6 @@
 #include "Config.h"
 
 namespace replication {
-
 	using std::string;
 	using mysqlx::SessionOption;
 	using mysqlx::Session;
@@ -17,22 +16,28 @@ namespace replication {
 	using mysqlx::Column;
 
 	bool comp_tables(mysqlx::Table table1, mysqlx::Table table2);
+	bool comp_columns(const mysqlx::Column &column1, const mysqlx::Column &column2);
 
-	class db_replicator
+	class dbReplicator
 	{
 	public:
-		db_replicator(Params params);
-		~db_replicator();
+		dbReplicator(Params params);
+		~dbReplicator();
 		string replicate();
-		std::map<string, string> get_table_metadata(mysqlx::Table table);
+		std::map<string, string> getTableMetaData(mysqlx::Table table);
 	private:
-		std::string alter_table(std::string table_name, std::string how, std::string what);
+		std::string createTable(mysqlx::Table table);
+		void processTables(mysqlx::Table table1, mysqlx::Table table2);
+		std::string insertRows(mysqlx::Table table, bool is_all, int id);
+		std::vector< std::string> getColumnNames(mysqlx::Table table, bool is_conv);
 		
-		std::string create_table(mysqlx::Table table);
-		void process_table(mysqlx::Table table);
-		std::string insert_table(mysqlx::Table table);
-		std::string get_columns_name(mysqlx::Table table, bool is_conv);
+		void processRows(mysqlx::RowResult &masterRes, mysqlx::Table &masterTable, mysqlx::RowResult &slaveRes, mysqlx::Table &slaveTable);
 		friend bool comp_tables(mysqlx::Table table1, mysqlx::Table table2);
+
+		bool comp_rows( mysqlx::Row &master, mysqlx::Row &slave)
+		{
+			return ((int)master.get(0) < (int)slave.get(0));
+		}
 	private:
 		Session *master_session, *slave_session;
 		Schema *master_db, *slave_db;
